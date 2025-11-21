@@ -1,0 +1,102 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/admin.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/bot.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/notifications.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/order.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/products.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/promocodes.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "api/dangerous.py",
+      "use": "@vercel/python"
+    },
+    {
+      "src": "index.html",
+      "use": "@vercel/static"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/admin",
+      "dest": "/api/admin.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/admin/(.*)",
+      "dest": "/api/admin.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/bot",
+      "dest": "/api/bot.py",
+      "methods": ["GET", "POST"]
+    },
+    {
+      "src": "/api/notifications",
+      "dest": "/api/notifications.py",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/api/order",
+      "dest": "/api/order.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/order/(.*)",
+      "dest": "/api/order.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/products",
+      "dest": "/api/products.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/products/(.*)",
+      "dest": "/api/products.py",
+      "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/promocodes",
+      "dest": "/api/promocodes.py",
+      "methods": ["GET", "POST", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/promocodes/(.*)",
+      "dest": "/api/promocodes.py",
+      "methods": ["GET", "POST", "DELETE", "OPTIONS"]
+    },
+    {
+      "src": "/api/dangerous",
+      "dest": "/api/dangerous.py",
+      "methods": ["POST", "OPTIONS"]
+    },
+    {
+      "src": "/",
+      "dest": "/index.html"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
+}
