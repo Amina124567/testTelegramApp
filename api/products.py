@@ -43,11 +43,8 @@ class Handler(BaseHTTPRequestHandler):
                     "name": "Букет из 25 красных роз",
                     "price": 3500,
                     "image_url": "https://s.widget-club.com/images/YyiR86zpwIMIfrCZoSs4ulVD9RF3/1a4e33422efdd0fbf0c2af3394a67b13/ab18ec0a91069208210a71ac46ce9176.jpg",
-                    "category": "roses",
                     "description": "Роскошные красные розы в элегантной упаковке",
-                    "fact": "Красные розы символизируют глубокую любовь и страсть. В Древнем Риме они были символом Венеры - богини любви.",
                     "is_available": True,
-                    "is_featured": True,
                     "sort_order": 1
                 }
             ]
@@ -60,7 +57,7 @@ class Handler(BaseHTTPRequestHandler):
             post_data = self.rfile.read(content_length)
             product_data = json.loads(post_data)
             
-            required_fields = ['name', 'price', 'category']
+            required_fields = ['name', 'price']
             for field in required_fields:
                 if field not in product_data or not product_data[field]:
                     self.send_response(400)
@@ -73,9 +70,6 @@ class Handler(BaseHTTPRequestHandler):
             
             if 'is_available' not in product_data:
                 product_data['is_available'] = True
-            
-            if 'is_featured' not in product_data:
-                product_data['is_featured'] = False
             
             max_order_response = supabase.table("products").select("sort_order").order("sort_order", desc=True).limit(1).execute()
             max_order = max_order_response.data[0]['sort_order'] if max_order_response.data else 0

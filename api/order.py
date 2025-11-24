@@ -72,17 +72,7 @@ class Handler(BaseHTTPRequestHandler):
             
             update_data = {'status_id': status_id}
             
-            if status_id == 5:
-                order_response = supabase.table("orders").select("total_amount, discount_amount").eq("id", order_id).execute()
-                if order_response.data:
-                    order = order_response.data[0]
-                    profit = order['total_amount'] - (order['discount_amount'] or 0)
-                    update_data['profit'] = profit
-            
             response = supabase.table("orders").update(update_data).eq("id", order_id).execute()
-            
-            if status_id:
-                self.send_order_notification(order_id, status_id)
             
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -110,15 +100,7 @@ class Handler(BaseHTTPRequestHandler):
             db_success = self.save_order_to_db(order_data)
             
             if db_success:
-                delivery_option = order_data.get('delivery_option', 'pickup')
-                delivery_address = order_data.get('delivery_address', '')
-                discount_amount = order_data.get('discount_amount', 0)
-                promocode_id = order_data.get('promocode_id')
-                
-                admin_success = self.send_admin_notification(order_data, delivery_option, delivery_address, discount_amount)
-                
-                if promocode_id:
-                    self.update_promocode_usage(promocode_id)
+                admin_success = self.send_admin_notification(order_data)
             
             self.send_response(200)
             self.send_header('Content-type', 'application/json')
@@ -170,7 +152,7 @@ class Handler(BaseHTTPRequestHandler):
             response = {'success': False, 'error': str(e)}
             self.wfile.write(json.dumps(response).encode('utf-8'))
     
-    def send_admin_notification(self, order_data, delivery_option, delivery_address, discount_amount):
+    def send_admin_notification(self, order_data):
         try:
             bot_token = os.environ.get('BOT_TOKEN')
             
@@ -185,38 +167,12 @@ class Handler(BaseHTTPRequestHandler):
             telegram_link = f"tg://openmessage?user_id={order_data['user']['id']}"
             phone_link = f"https://t.me/+{clean_phone}" if clean_phone.startswith('7') else f"https://t.me/+7{clean_phone}"
             
-            delivery_info = "🚚 Доставка" if delivery_option == "delivery" else "🏪 Самовывоз"
-            if delivery_option == "delivery" and delivery_address:
-                delivery_info += f"\n📍 Адрес: {delivery_address}"
-            else:
-                settings_response = supabase.table("shop_settings").select("value").eq("key", "contacts").execute()
-                if settings_response.data:
-                    contacts = settings_response.data[0]['value']
-                    pickup_address = contacts.get('address', 'Ярославль, ул. Цветочная, 15')
-                    delivery_info += f"\n📍 Адрес самовывоза: {pickup_address}"
-            
             items_text = "\n".join([
                 f"• {item['name']} - {item['quantity']} шт. × {item['price']} ₽ = {item['total']} ₽" 
                 for item in order_data['items']
             ])
             
             cart_total = order_data['total']
-            delivery_cost = 0
-            free_delivery_min = 3000
-            
-            if delivery_option == "delivery":
-                settings_response = supabase.table("shop_settings").select("value").eq("key", "delivery_price").execute()
-                if settings_response.data:
-                    delivery_price = settings_response.data[0]['value'].get('value', 200)
-                    free_delivery_min_response = supabase.table("shop_settings").select("value").eq("key", "free_delivery_min").execute()
-                    if free_delivery_min_response.data:
-                        free_delivery_min = free_delivery_min_response.data[0]['value'].get('value', 3000)
-                    
-                    delivery_cost = 0 if cart_total >= free_delivery_min else delivery_price
-            
-            total_with_delivery = cart_total + delivery_cost - discount_amount
-            
-            discount_text = f"🎫 Скидка по промокоду: -{discount_amount} ₽\n" if discount_amount > 0 else ""
             
             message = f"""🎉 *НОВЫЙ ЗАКАЗ!*
 
@@ -226,14 +182,10 @@ class Handler(BaseHTTPRequestHandler):
 👤 Юзернейм: @{order_data['user']['username']}
 📞 Телефон: `{clean_phone}`
 
-{delivery_info}
-
 🛍️ *Состав заказа:*
 {items_text}
 
-💵 *Сумма заказа:* {cart_total} ₽
-🚚 *Доставка:* {f'{delivery_cost} ₽' if delivery_cost > 0 else 'Бесплатно'} {f'(бесплатно от {free_delivery_min} ₽)' if delivery_cost > 0 else ''}
-{discount_text}💎 *Итого к оплате:* {total_with_delivery} ₽
+💎 *Итого к оплате:* {cart_total} ₽
 
 📋 *Комментарий:* {order_data.get('comment', 'Нет комментария')}
 
@@ -273,25 +225,6 @@ class Handler(BaseHTTPRequestHandler):
             clean_phone = order_data['phone'].replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
             
             cart_total = order_data['total']
-            delivery_option = order_data.get('delivery_option', 'pickup')
-            delivery_address = order_data.get('delivery_address', '')
-            promocode_id = order_data.get('promocode_id')
-            discount_amount = order_data.get('discount_amount', 0)
-            
-            delivery_cost = 0
-            free_delivery_min = 3000
-            
-            if delivery_option == "delivery":
-                settings_response = supabase.table("shop_settings").select("value").eq("key", "delivery_price").execute()
-                if settings_response.data:
-                    delivery_price = settings_response.data[0]['value'].get('value', 200)
-                    free_delivery_min_response = supabase.table("shop_settings").select("value").eq("key", "free_delivery_min").execute()
-                    if free_delivery_min_response.data:
-                        free_delivery_min = free_delivery_min_response.data[0]['value'].get('value', 3000)
-                    
-                    delivery_cost = 0 if cart_total >= free_delivery_min else delivery_price
-            
-            final_amount = cart_total + delivery_cost - discount_amount
             
             order_record = {
                 "user_id": str(order_data['user']['id']),
@@ -299,15 +232,10 @@ class Handler(BaseHTTPRequestHandler):
                 "user_username": order_data['user'].get('username', ''),
                 "phone": clean_phone,
                 "comment": order_data.get('comment', ''),
-                "delivery_option": delivery_option,
-                "delivery_address": delivery_address,
                 "items": order_data['items'],
                 "total_amount": cart_total,
-                "discount_amount": discount_amount,
-                "final_amount": final_amount,
-                "promocode_id": promocode_id,
-                "status_id": 1,
-                "profit": 0
+                "final_amount": cart_total,
+                "status_id": 1
             }
             
             result = supabase.table("orders").insert(order_record).execute()
@@ -317,52 +245,3 @@ class Handler(BaseHTTPRequestHandler):
         except Exception as e:
             print(f"Error saving order to DB: {e}")
             return False
-
-    def send_order_notification(self, order_id, status_id):
-        try:
-            bot_token = os.environ.get('BOT_TOKEN')
-            
-            if not bot_token:
-                print("Missing BOT_TOKEN")
-                return False
-            
-            order_response = supabase.table("orders").select("*").eq("id", order_id).execute()
-            if not order_response.data:
-                return False
-            
-            order = order_response.data[0]
-            
-            status_messages = {
-                1: "✅ Ваш заказ принят! Мы начинаем его обработку.",
-                2: "🔄 Заказ подтвержден! Мы готовим его к отправке.",
-                3: "📦 Ваш заказ собирается! Скоро он будет у вас.",
-                4: "🚗 Заказ в пути! Курьер уже везет его к вам.",
-                5: "🎉 Заказ доставлен! Спасибо за покупку!",
-                6: "❌ Заказ отменен."
-            }
-            
-            message = status_messages.get(status_id, f"Статус заказа изменен")
-            
-            url = f"https://api.telegram.org/bot{bot_token}/sendMessage"
-            payload = {
-                'chat_id': order['user_id'],
-                'text': message,
-                'parse_mode': 'Markdown'
-            }
-            
-            response = requests.post(url, json=payload, timeout=10)
-            return response.status_code == 200
-            
-        except Exception as e:
-            print(f"Error sending order notification: {e}")
-            return False
-
-    def update_promocode_usage(self, promocode_id):
-        try:
-            promocode_response = supabase.table("promocodes").select("used_count").eq("id", promocode_id).execute()
-            if promocode_response.data:
-                current_count = promocode_response.data[0].get('used_count', 0)
-                supabase.table("promocodes").update({"used_count": current_count + 1}).eq("id", promocode_id).execute()
-                
-        except Exception as e:
-            print(f"Error updating promocode usage: {e}")

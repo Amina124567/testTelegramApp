@@ -29,22 +29,17 @@ class Handler(BaseHTTPRequestHandler):
             elif '/stats' in path:
                 orders_response = supabase.table("orders").select("*").execute()
                 products_response = supabase.table("products").select("*").execute()
-                promocodes_response = supabase.table("promocodes").select("*").execute()
                 
                 total_orders = len(orders_response.data)
                 completed_orders = len([o for o in orders_response.data if o.get('status_id') == 5])
-                total_revenue = sum(order.get('profit', 0) for order in orders_response.data if order.get('status_id') == 5)
-                potential_revenue = sum(order['total_amount'] for order in orders_response.data if order.get('status_id') != 5)
+                total_revenue = sum(order.get('final_amount', 0) for order in orders_response.data if order.get('status_id') == 5)
                 total_products = len(products_response.data)
-                active_promocodes = len([p for p in promocodes_response.data if p.get('is_active')])
                 
                 data = {
                     'total_orders': total_orders,
                     'completed_orders': completed_orders,
                     'total_revenue': total_revenue,
-                    'potential_revenue': potential_revenue,
-                    'total_products': total_products,
-                    'active_promocodes': active_promocodes
+                    'total_products': total_products
                 }
             elif '/themes' in path:
                 response = supabase.table("shop_themes").select("*").execute()
