@@ -538,6 +538,21 @@
                 }
         
                 // Админ-функции
+                function showTab(tabName) {
+                    alert('showTab вызван: ' + tabName); // ← ДОБАВЬ ЭТУ СТРОКУ
+                    document.querySelectorAll('.admin-tab').forEach(t => t.classList.remove('active'));
+                    document.querySelectorAll('.admin-tab-content').forEach(c => c.classList.remove('active'));
+                    
+                    document.querySelector(`[data-tab="${tabName}"]`).classList.add('active');
+                    document.getElementById(tabName + 'Tab').classList.add('active');
+                    
+                    if(tabName === 'dashboard') loadDashboard();
+                    if(tabName === 'products') loadProductsAdmin();
+                    if(tabName === 'orders') loadOrdersAdmin();
+                    if(tabName === 'admins') loadAdmins();
+                    if(tabName === 'settings') loadSettings();
+                }
+
                 async function checkAdminAccess() {
                     try {
                         const telegramId = String(tg.initDataUnsafe.user?.id || '');
