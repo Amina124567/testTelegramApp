@@ -43,7 +43,7 @@ class Handler(BaseHTTPRequestHandler):
             self.wfile.write(b'OK')
 
     def send_welcome_message(self, chat_id, bot_token):
-        web_app_url = "https://flowershop-nine-ashy.vercel.app/"
+        web_app_url = "https://testtelegramapp.vercel.app/"
         
         markup = {
             "inline_keyboard": [
