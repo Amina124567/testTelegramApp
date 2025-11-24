@@ -10,23 +10,11 @@
       "use": "@vercel/python"
     },
     {
-      "src": "api/notifications.py",
-      "use": "@vercel/python"
-    },
-    {
       "src": "api/order.py",
       "use": "@vercel/python"
     },
     {
       "src": "api/products.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/promocodes.py",
-      "use": "@vercel/python"
-    },
-    {
-      "src": "api/dangerous.py",
       "use": "@vercel/python"
     },
     {
@@ -51,11 +39,6 @@
       "methods": ["GET", "POST"]
     },
     {
-      "src": "/api/notifications",
-      "dest": "/api/notifications.py",
-      "methods": ["POST", "OPTIONS"]
-    },
-    {
       "src": "/api/order",
       "dest": "/api/order.py",
       "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
@@ -74,21 +57,6 @@
       "src": "/api/products/(.*)",
       "dest": "/api/products.py",
       "methods": ["GET", "POST", "PUT", "DELETE", "OPTIONS"]
-    },
-    {
-      "src": "/api/promocodes",
-      "dest": "/api/promocodes.py",
-      "methods": ["GET", "POST", "DELETE", "OPTIONS"]
-    },
-    {
-      "src": "/api/promocodes/(.*)",
-      "dest": "/api/promocodes.py",
-      "methods": ["GET", "POST", "DELETE", "OPTIONS"]
-    },
-    {
-      "src": "/api/dangerous",
-      "dest": "/api/dangerous.py",
-      "methods": ["POST", "OPTIONS"]
     },
     {
       "src": "/",
