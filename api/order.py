@@ -7,12 +7,13 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    from supabase_client import supabase
+    from supabase_client import init_supabase
 except ImportError as e:
     print(f"Import error: {e}")
 
 class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
+        supabase = init_supabase()
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'POST, OPTIONS, GET, PUT, DELETE')
@@ -21,6 +22,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_GET(self):
         try:
+            supabase = init_supabase()
             user_id = self.headers.get('User-Id', '')
             is_admin = self.headers.get('Is-Admin', 'false') == 'true'
             
@@ -60,6 +62,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_PUT(self):
         try:
+            supabase = init_supabase()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             order_data = json.loads(post_data)
@@ -93,6 +96,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         try:
+            supabase = init_supabase()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             order_data = json.loads(post_data)
@@ -121,6 +125,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_DELETE(self):
         try:
+            supabase = init_supabase()
             path_parts = self.path.split('/')
             order_id = path_parts[-1] if path_parts[-1] else path_parts[-2]
             
@@ -154,6 +159,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def send_admin_notification(self, order_data):
         try:
+            supabase = init_supabase()
             bot_token = os.environ.get('BOT_TOKEN')
             
             admins_response = supabase.table("admins").select("telegram_id").eq("is_active", True).execute()
@@ -222,6 +228,7 @@ class Handler(BaseHTTPRequestHandler):
 
     def save_order_to_db(self, order_data):
         try:
+            supabase = init_supabase()
             clean_phone = order_data['phone'].replace(' ', '').replace('(', '').replace(')', '').replace('-', '')
             
             cart_total = order_data['total']

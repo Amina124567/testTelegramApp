@@ -6,12 +6,13 @@ import sys
 sys.path.append(os.path.dirname(__file__))
 
 try:
-    from supabase_client import supabase
+    from supabase_client import init_supabase
 except ImportError as e:
     print(f"Import error: {e}")
 
 class Handler(BaseHTTPRequestHandler):
     def do_OPTIONS(self):
+        supabase = init_supabase()
         self.send_response(200)
         self.send_header('Access-Control-Allow-Origin', '*')
         self.send_header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS')
@@ -20,6 +21,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_GET(self):
         try:
+            supabase = init_supabase()
             path = self.path
             telegram_id = self.headers.get('Telegram-Id', '').strip()
             
@@ -81,6 +83,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_POST(self):
         try:
+            supabase = init_supabase()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data)
@@ -137,6 +140,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_PUT(self):
         try:
+            supabase = init_supabase()
             content_length = int(self.headers['Content-Length'])
             post_data = self.rfile.read(content_length)
             data = json.loads(post_data)
@@ -177,6 +181,7 @@ class Handler(BaseHTTPRequestHandler):
     
     def do_DELETE(self):
         try:
+            supabase = init_supabase()
             path_parts = self.path.split('/')
             resource_id = path_parts[-1] if path_parts[-1] else path_parts[-2]
             
