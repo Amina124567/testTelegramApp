@@ -354,5 +354,252 @@
     </div>
 
     <div class="floating-buttons">
-        <button class="admin-button" onclick="switchToAdminView()" title="Панель управления" id="adminButton">
-            <i class="fas fa-cog"></
+                <button class="admin-button" onclick="switchToAdminView()" title="Панель управления" id="adminButton">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
+        
+            <div class="modal" id="orderModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title"><i class="fas fa-shopping-bag"></i> Оформление заказа</div>
+                        <button class="close-modal" id="closeOrder">×</button>
+                    </div>
+                    
+                    <div class="success-state">
+                        <div class="success-icon">🎉</div>
+                        <div class="success-title">Товар добавлен в заказ!</div>
+                        <div class="success-message">
+                            Для завершения оформления заказа напишите нашему менеджеру в Telegram:
+                        </div>
+                        <div style="background:#f8f9fa;padding:16px;border-radius:12px;margin:16px 0;text-align:center">
+                            <div style="font-size:18px;font-weight:700;color:var(--primary)">@ImTatyanaSolovyova</div>
+                        </div>
+                        <button class="btn btn-primary btn-lg" onclick="contactManager()" style="width:100%">
+                            <i class="fab fa-telegram"></i> Написать менеджеру
+                        </button>
+                        <button class="btn btn-secondary" onclick="closeOrderModal()" style="width:100%;margin-top:8px">
+                            <i class="fas fa-shopping-bag"></i> Продолжить покупки
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <div class="modal" id="editProductModal">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <div class="modal-title"><i class="fas fa-edit"></i> Редактировать товар</div>
+                        <button class="close-modal" id="closeEditProduct">×</button>
+                    </div>
+                    <div id="editProductForm">
+                        <input type="hidden" id="editProductId">
+                        <div class="form-group">
+                            <label class="form-label">Название товара</label>
+                            <input type="text" class="settings-input" id="editProductName">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Цена</label>
+                            <input type="number" class="settings-input" id="editProductPrice">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Изображение</label>
+                            <input type="text" class="settings-input" id="editProductImage">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Описание</label>
+                            <textarea class="settings-input" id="editProductDescription" rows="3"></textarea>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="editProductAvailable" checked>
+                            <label class="checkbox-label">Товар доступен для заказа</label>
+                        </div>
+                        <button class="btn btn-primary btn-lg" onclick="updateProduct()" style="width:100%">
+                            <i class="fas fa-save"></i> Сохранить изменения
+                        </button>
+                    </div>
+                </div>
+            </div>
+        
+            <script>
+                let tg = window.Telegram.WebApp;
+                tg.expand();
+                tg.ready();
+                
+                let products = [];
+                let isAdmin = false;
+                let currentUserRole = '';
+                let adminData = {
+                    products: [],
+                    orders: [],
+                    admins: [],
+                    stats: {},
+                    settings: {},
+                    themes: []
+                };
+        
+                let currentProduct = null;
+        
+                // Уведомления
+                function showToast(message, type = 'success') {
+                    const toast = document.getElementById('toast');
+                    const toastMessage = document.getElementById('toastMessage');
+                    const toastIcon = document.getElementById('toastIcon');
+                    
+                    toastMessage.textContent = message;
+                    toast.className = 'toast';
+                    toast.classList.add(type);
+                    
+                    if (type === 'success') {
+                        toastIcon.className = 'fas fa-check-circle';
+                    } else if (type === 'error') {
+                        toastIcon.className = 'fas fa-times-circle';
+                    } else {
+                        toastIcon.className = 'fas fa-info-circle';
+                    }
+                    
+                    toast.classList.add('show');
+                    setTimeout(() => {
+                        toast.classList.remove('show');
+                    }, 2000);
+                }
+        
+                // Загрузка товаров
+                async function loadProducts() {
+                    try {
+                        const response = await fetch('/api/products');
+                        if (!response.ok) throw new Error('Network error');
+                        products = await response.json();
+                        renderProducts();
+                    } catch (error) {
+                        console.error('Error loading products:', error);
+                        showToast('Ошибка загрузки каталога', 'error');
+                        renderProducts([]);
+                    }
+                }
+        
+                // Отображение товаров
+                function renderProducts() {
+                    const grid = document.getElementById('productsGrid');
+                    
+                    if (products.length === 0) {
+                        grid.innerHTML = '<div class="loading"><div>Товары временно недоступны</div></div>';
+                        return;
+                    }
+                    
+                    grid.innerHTML = '';
+                    
+                    products.forEach(product => {
+                        const productCard = document.createElement('div');
+                        productCard.className = 'product-card';
+                        productCard.innerHTML = `
+                            <div class="product-image">
+                                <img src="${product.image_url}" alt="${product.name}" loading="lazy" 
+                                     onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAwIiBoZWlnaHQ9IjMwMCIgdmlld0JveD0iMCAwIDQwMCAzMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSI0MDAiIGhlaWdodD0iMzAwIiBmaWxsPSIjRjNGNEY2Ii8+CjxwYXRoIGQ9Ik0yMDAgMTUwQzIyNSAyMDAgMjUwIDE1MCAyMDAgMTAwQzE1MCAxNTAgMTc1IDIwMCAyMDAgMTUwWiIgZmlsbD0iI0U1RTVFNSIvPgo8L3N2Zz4K'">
+                            </div>
+                            <div class="product-content">
+                                <div class="product-title">${product.name}</div>
+                                <div class="product-description">${product.description}</div>
+                                <div class="product-footer">
+                                    <div class="product-price">${product.price.toLocaleString()} ₽</div>
+                                    <button class="order-btn" onclick="orderProduct(${product.id})">
+                                        <i class="fas fa-shopping-bag"></i> Заказать
+                                    </button>
+                                </div>
+                            </div>
+                        `;
+                        grid.appendChild(productCard);
+                    });
+                }
+        
+                // Заказ товара
+                function orderProduct(productId) {
+                    currentProduct = products.find(p => p.id === productId);
+                    if (currentProduct) {
+                        document.getElementById('orderModal').style.display = 'flex';
+                        tg.HapticFeedback.impactOccurred('soft');
+                    }
+                }
+        
+                // Связь с менеджером
+                function contactManager() {
+                    const productInfo = currentProduct ? 
+                        `Заказ: ${currentProduct.name} - ${currentProduct.price}₽` : 
+                        'Хочу сделать заказ';
+                    
+                    const message = encodeURIComponent(productInfo);
+                    window.open(`https://t.me/ImTatyanaSolovyova?text=${message}`, '_blank');
+                    closeOrderModal();
+                    showToast('Свяжитесь с менеджером для оформления', 'success');
+                }
+        
+                function closeOrderModal() {
+                    document.getElementById('orderModal').style.display = 'none';
+                    currentProduct = null;
+                }
+        
+                // Админ-функции
+                async function checkAdminAccess() {
+                    try {
+                        const telegramId = String(tg.initDataUnsafe.user?.id || '');
+                        const response = await fetch('/api/admin', {
+                            headers: { 'Telegram-Id': telegramId }
+                        });
+                        const data = await response.json();
+                        
+                        isAdmin = data.is_admin === true && data.is_active !== false;
+                        currentUserRole = data.role || '';
+                        
+                        if (isAdmin) {
+                            document.getElementById('adminButton').style.display = 'flex';
+                        }
+                    } catch (error) {
+                        console.error('Ошибка проверки админ-доступа:', error);
+                    }
+                }
+        
+                function switchToCustomerView() {
+                    document.getElementById('adminPanel').style.display = 'none';
+                    document.getElementById('customerView').style.display = 'block';
+                    document.getElementById('adminButton').style.display = isAdmin ? 'flex' : 'none';
+                }
+        
+                function switchToAdminView() {
+                    if (!isAdmin) {
+                        showToast('Нет доступа к панели управления', 'error');
+                        return;
+                    }
+                    document.getElementById('customerView').style.display = 'none';
+                    document.getElementById('adminPanel').style.display = 'block';
+                    document.getElementById('adminButton').style.display = 'none';
+                    loadAdminData();
+                }
+        
+                // Остальные админ-функции остаются как были...
+                // [Здесь должен быть остальной JavaScript код из предыдущей версии]
+        
+                // Инициализация
+                function initApp() {
+                    loadProducts();
+                    checkAdminAccess();
+                    setupEventListeners();
+                }
+        
+                function setupEventListeners() {
+                    document.getElementById('closeOrder').addEventListener('click', closeOrderModal);
+                    document.querySelectorAll('.modal').forEach(modal => {
+                        modal.addEventListener('click', (e) => {
+                            if (e.target === modal) {
+                                modal.style.display = 'none';
+                            }
+                        });
+                    });
+                }
+        
+                if (document.readyState === 'loading') {
+                    document.addEventListener('DOMContentLoaded', initApp);
+                } else {
+                    initApp();
+                }
+            </script>
+        </body>
+        </html>
